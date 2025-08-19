@@ -3,6 +3,7 @@
 package dbn_hist
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 )
@@ -10,7 +11,7 @@ import (
 // Databento Time Series API:
 //  https://databento.com/docs/api-reference-historical/timeseries/timeseries-get-range?historical=http&live=python
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // GetRange makes a streaming request for timeseries data from Databento.
 //
@@ -19,7 +20,7 @@ import (
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func GetRange(apiKey string, jobParams SubmitJobParams) ([]byte, error) {
+func (c *client) GetRange(ctx context.Context, jobParams SubmitJobParams) ([]byte, error) {
 	apiUrl := "https://hist.databento.com/v0/timeseries.get_range"
 
 	formData := url.Values{}

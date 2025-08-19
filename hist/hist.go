@@ -3,6 +3,7 @@
 package dbn_hist
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -32,9 +33,9 @@ type RequestErrorResp struct {
 	Detail RequestError `json:"detail"`
 }
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 
-func databentoGetRequest(urlStr string, apiKey string) ([]byte, error) {
+func (c *client) databentoGetRequest(ctx context.Context, urlStr string) ([]byte, error) {
 	apiUrl, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
@@ -44,17 +45,16 @@ func databentoGetRequest(urlStr string, apiKey string) ([]byte, error) {
 		return nil, err
 	}
 
-	auth := base64.StdEncoding.EncodeToString([]byte(apiKey + ":"))
+	auth := base64.StdEncoding.EncodeToString([]byte(c.apiKey + ":"))
 	req.Header.Add("Authorization", "Basic "+auth)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	badStatusCode := (resp.StatusCode != http.StatusOK)
+	badStatusCode := resp.StatusCode != http.StatusOK
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -71,16 +71,16 @@ func databentoGetRequest(urlStr string, apiKey string) ([]byte, error) {
 	return body, nil
 }
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 
-func databentoPostFormRequest(urlStr string, apiKey string, form url.Values, accept string) ([]byte, error) {
+func (c *client) databentoPostFormRequest(ctx context.Context, urlStr string, form url.Values, accept string) ([]byte, error) {
 	apiUrl, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
 	}
 
 	formBody := strings.NewReader(form.Encode())
-	req, err := http.NewRequest("POST", apiUrl.String(), formBody)
+	req, err := http.NewRequestWithContext(ctx, "POST", apiUrl.String(), formBody)
 	if err != nil {
 		return nil, err
 	}
@@ -90,17 +90,16 @@ func databentoPostFormRequest(urlStr string, apiKey string, form url.Values, acc
 		req.Header.Set("Accept-Encoding", accept)
 	}
 
-	auth := base64.StdEncoding.EncodeToString([]byte(apiKey + ":"))
+	auth := base64.StdEncoding.EncodeToString([]byte(c.apiKey + ":"))
 	req.Header.Add("Authorization", "Basic "+auth)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	badStatusCode := (resp.StatusCode != http.StatusOK)
+	badStatusCode := resp.StatusCode != http.StatusOK
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
