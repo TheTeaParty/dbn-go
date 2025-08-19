@@ -29,7 +29,7 @@ func (c *client) GetRange(ctx context.Context, jobParams SubmitJobParams) ([]byt
 		return nil, fmt.Errorf("bad params: %w", err)
 	}
 
-	body, err := databentoPostFormRequest(apiUrl, apiKey, formData, "application/octet-stream")
+	body, err := c.databentoPostFormRequest(ctx, apiUrl, formData, "application/octet-stream")
 	if err != nil {
 		return nil, fmt.Errorf("failed post request: %w", err)
 	}
