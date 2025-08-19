@@ -4,6 +4,7 @@ package dbn_hist
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	dbn "github.com/NimbleMarkets/dbn-go"
+	"github.com/NimbleMarkets/dbn-go"
 )
 
 // Databento Batch API:
 //  https://databento.com/docs/api-reference-historical/batch/batch-list-files/returns?historical=http&live=python
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 type JobState string
 
@@ -82,7 +83,7 @@ func (e JobExpiredError) Error() string {
 	return fmt.Sprintf("Job %s is expired", e.JobID)
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 type Delivery string
 
@@ -135,7 +136,7 @@ func (d *Delivery) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // BatchJob is the description of a submitted batch job.
 type BatchJob struct {
@@ -165,7 +166,7 @@ type BatchJob struct {
 	ActualSize     uint64          `json:"actual_size"`                // The total size of the result of the batch job after splitting and compression.
 	PackageSize    uint64          `json:"package_size"`               // The total size of the result of the batch job after any packaging (including metadata).
 	State          JobState        `json:"state"`                      // The current status of the batch job.
-	TsReceived     time.Time       `json:"ts_received,omitempty"`      //The timestamp of when Databento received the batch job.
+	TsReceived     time.Time       `json:"ts_received,omitempty"`      // The timestamp of when Databento received the batch job.
 	TsQueued       time.Time       `json:"ts_queued,omitempty"`        // The timestamp of when the batch job was queued.
 	TsProcessStart time.Time       `json:"ts_process_start,omitempty"` // The timestamp of when the batch job began processing.
 	TsProcessDone  time.Time       `json:"ts_process_done,omitempty"`  // The timestamp of when the batch job finished processing.
@@ -281,14 +282,14 @@ func (jobParams *SubmitJobParams) ApplyToURLValues(params *url.Values) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Lists all jobs associated with the given state filter and 'since' date.
 //
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func ListJobs(apiKey string, stateFilter string, sinceYMD time.Time) ([]BatchJob, error) {
+func (c *client) ListJobs(ctx context.Context, stateFilter string, sinceYMD time.Time) ([]BatchJob, error) {
 	apiUrl := "https://hist.databento.com/v0/batch.list_jobs"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -304,7 +305,7 @@ func ListJobs(apiKey string, stateFilter string, sinceYMD time.Time) ([]BatchJob
 	}
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +324,7 @@ func ListJobs(apiKey string, stateFilter string, sinceYMD time.Time) ([]BatchJob
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func ListFiles(apiKey string, jobID string) ([]BatchFileDesc, error) {
+func (c *client) ListFiles(ctx context.Context, jobID string) ([]BatchFileDesc, error) {
 	apiUrl := "https://hist.databento.com/v0/batch.list_files"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -334,7 +335,7 @@ func ListFiles(apiKey string, jobID string) ([]BatchFileDesc, error) {
 	params.Add("job_id", jobID)
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		if errStr := err.Error(); strings.HasPrefix(errStr, "HTTP 410") {
 			return nil, JobExpiredError{JobID: jobID}
@@ -350,14 +351,14 @@ func ListFiles(apiKey string, jobID string) ([]BatchFileDesc, error) {
 	return batchFiles, nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // SubmitJob submits a new batch job and returns a description and identifiers for the job.
 //
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func SubmitJob(apiKey string, jobParams SubmitJobParams) (*BatchJob, error) {
+func (c *client) SubmitJob(ctx context.Context, jobParams SubmitJobParams) (*BatchJob, error) {
 	apiUrl := "https://hist.databento.com/v0/batch.submit_job"
 
 	formData := url.Values{}
@@ -366,7 +367,7 @@ func SubmitJob(apiKey string, jobParams SubmitJobParams) (*BatchJob, error) {
 		return nil, fmt.Errorf("bad params: %w", err)
 	}
 
-	body, err := databentoPostFormRequest(apiUrl, apiKey, formData, "")
+	body, err := c.databentoPostFormRequest(ctx, apiUrl, formData, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed post request: %w", err)
 	}

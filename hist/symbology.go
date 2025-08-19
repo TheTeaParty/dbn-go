@@ -3,6 +3,7 @@
 package dbn_hist
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -12,7 +13,7 @@ import (
 	"github.com/NimbleMarkets/dbn-go"
 )
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // https://github.com/databento/databento-rs/blob/main/src/historical/symbology.rs
 // The parameters for [`SymbologyClient::resolve()`].
@@ -55,9 +56,9 @@ type Resolution struct {
 	Status int `json:"status"`
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
-func SymbologyResolve(apiKey string, params ResolveParams) (*Resolution, error) {
+func (c *client) SymbologyResolve(ctx context.Context, params ResolveParams) (*Resolution, error) {
 	apiUrl := "https://hist.databento.com/v0/symbology.resolve"
 
 	csvSymbols := strings.Join(params.Symbols, ",")
@@ -76,7 +77,7 @@ func SymbologyResolve(apiKey string, params ResolveParams) (*Resolution, error) 
 		formData.Add("end_date", params.DateRange.End.Format(time.RFC3339))
 	}
 
-	body, err := databentoPostFormRequest(apiUrl, apiKey, formData, "")
+	body, err := c.databentoPostFormRequest(ctx, apiUrl, formData, "")
 	if err != nil {
 		return nil, err
 	}

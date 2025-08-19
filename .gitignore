@@ -1,4 +1,5 @@
 # dbn-go .gitignore
+.idea/
 
 .task
 .DS_Store

@@ -3,6 +3,7 @@
 package dbn_hist
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,9 +21,9 @@ type FeedMode uint8
 const (
 	// The historical batch data feed.
 	FeedMode_Historical FeedMode = 0
-	/// The historical streaming data feed.
+	// / The historical streaming data feed.
 	FeedMode_HistoricalStreaming FeedMode = 1
-	/// The Live data feed for real-time and intraday historical.
+	// / The Live data feed for real-time and intraday historical.
 	FeedMode_Live FeedMode = 2
 )
 
@@ -73,7 +74,7 @@ func (f *FeedMode) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // MetadataQueryParams is the common request structure for several Metadata API queries
 type MetadataQueryParams struct {
@@ -135,9 +136,9 @@ type FieldDetail struct {
 
 // The unit prices for a particular [`FeedMode`].
 type UnitPricesForMode struct {
-	/// The data feed mode.
+	// / The data feed mode.
 	Mode FeedMode `json:"mode,omitempty"`
-	/// The unit prices in US dollars by data record schema.
+	// / The unit prices in US dollars by data record schema.
 	UnitPrices map[string]float64 `json:"unit_prices,omitempty"`
 }
 
@@ -155,20 +156,20 @@ type ConditionDetail struct {
 	LastModified string // The date when any schema in the dataset on the given day was last generated or modified, as an ISO 8601 date string.
 }
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 
 // Lists the details of all publishers.
 //
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API.
-func ListPublishers(apiKey string) ([]PublisherDetail, error) {
+func (c *client) ListPublishers(ctx context.Context) ([]PublisherDetail, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.list_publishers"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func ListPublishers(apiKey string) ([]PublisherDetail, error) {
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func ListDatasets(apiKey string, dateRange DateRange) ([]string, error) {
+func (c *client) ListDatasets(ctx context.Context, dateRange DateRange) ([]string, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.list_datasets"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -202,7 +203,7 @@ func ListDatasets(apiKey string, dateRange DateRange) ([]string, error) {
 	}
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +221,7 @@ func ListDatasets(apiKey string, dateRange DateRange) ([]string, error) {
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func ListSchemas(apiKey string, dataset string) ([]string, error) {
+func (c *client) ListSchemas(ctx context.Context, dataset string) ([]string, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.list_schemas"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -231,7 +232,7 @@ func ListSchemas(apiKey string, dataset string) ([]string, error) {
 	params.Add("dataset", dataset)
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +250,7 @@ func ListSchemas(apiKey string, dataset string) ([]string, error) {
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func ListFields(apiKey string, encoding dbn.Encoding, schema dbn.Schema) ([]FieldDetail, error) {
+func (c *client) ListFields(ctx context.Context, encoding dbn.Encoding, schema dbn.Schema) ([]FieldDetail, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.list_fields"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -261,7 +262,7 @@ func ListFields(apiKey string, encoding dbn.Encoding, schema dbn.Schema) ([]Fiel
 	params.Add("schema", schema.String())
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +280,7 @@ func ListFields(apiKey string, encoding dbn.Encoding, schema dbn.Schema) ([]Fiel
 // # Errors
 // This function returns an error when it fails to communicate with the Databento API
 // or the API indicates there's an issue with the request.
-func ListUnitPrices(apiKey string, dataset string) ([]UnitPricesForMode, error) {
+func (c *client) ListUnitPrices(ctx context.Context, dataset string) ([]UnitPricesForMode, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.list_unit_prices"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -290,7 +291,7 @@ func ListUnitPrices(apiKey string, dataset string) ([]UnitPricesForMode, error) 
 	params.Add("dataset", dataset)
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return nil, err
 	}
@@ -303,13 +304,13 @@ func ListUnitPrices(apiKey string, dataset string) ([]UnitPricesForMode, error) 
 	return unitPricesForModes, nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Calls the Metadata API to get the condition of a dataset and date range.
 // Returns ConditionDetails, or an error if any.
 // Passing a zero time for Start is the beginning of the Dataset.
 // Passing a zero time for End is the end of the Dataset.
-func GetDatasetCondition(apiKey string, dataset string, dateRange DateRange) ([]ConditionDetail, error) {
+func (c *client) GetDatasetCondition(ctx context.Context, dataset string, dateRange DateRange) ([]ConditionDetail, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.get_dataset_condition"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -326,7 +327,7 @@ func GetDatasetCondition(apiKey string, dataset string, dateRange DateRange) ([]
 	}
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return nil, err
 	}
@@ -339,11 +340,11 @@ func GetDatasetCondition(apiKey string, dataset string, dateRange DateRange) ([]
 	return ConditionDetails, nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Calls the Metadata API to get the date range of a dataset.
 // Returns the DateRage, or an error if any.
-func GetDatasetRange(apiKey string, dataset string) (DateRange, error) {
+func (c *client) GetDatasetRange(ctx context.Context, dataset string) (DateRange, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.get_dataset_range"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -354,7 +355,7 @@ func GetDatasetRange(apiKey string, dataset string) (DateRange, error) {
 	params.Add("dataset", dataset)
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return DateRange{}, err
 	}
@@ -367,11 +368,11 @@ func GetDatasetRange(apiKey string, dataset string) (DateRange, error) {
 	return dateRange, nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Calls the Metadata API to get the record count of a GetRange query.
 // Returns the record count or an error if any.
-func GetRecordCount(apiKey string, metaParams MetadataQueryParams) (int, error) {
+func (c *client) GetRecordCount(ctx context.Context, metaParams MetadataQueryParams) (int, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.get_record_count"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -385,7 +386,7 @@ func GetRecordCount(apiKey string, metaParams MetadataQueryParams) (int, error) 
 	}
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return 0, fmt.Errorf("failed get request: %w", err)
 	}
@@ -400,7 +401,7 @@ func GetRecordCount(apiKey string, metaParams MetadataQueryParams) (int, error) 
 
 // Calls the Metadata API to get the billable size of a GetRange query.
 // Returns the billable size or an error if any.
-func GetBillableSize(apiKey string, metaParams MetadataQueryParams) (int, error) {
+func (c *client) GetBillableSize(ctx context.Context, metaParams MetadataQueryParams) (int, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.get_billable_size"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -414,7 +415,7 @@ func GetBillableSize(apiKey string, metaParams MetadataQueryParams) (int, error)
 	}
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return 0, fmt.Errorf("failed get request: %w", err)
 	}
@@ -429,7 +430,7 @@ func GetBillableSize(apiKey string, metaParams MetadataQueryParams) (int, error)
 
 // Calls the Metadata API to get the cost estimate of a GetRange query.
 // Returns the cost or an error if any.
-func GetCost(apiKey string, metaParams MetadataQueryParams) (float64, error) {
+func (c *client) GetCost(ctx context.Context, metaParams MetadataQueryParams) (float64, error) {
 	apiUrl := "https://hist.databento.com/v0/metadata.get_cost"
 	baseUrl, err := url.Parse(apiUrl)
 	if err != nil {
@@ -443,7 +444,7 @@ func GetCost(apiKey string, metaParams MetadataQueryParams) (float64, error) {
 	}
 	baseUrl.RawQuery = params.Encode()
 
-	body, err := databentoGetRequest(baseUrl.String(), apiKey)
+	body, err := c.databentoGetRequest(ctx, baseUrl.String())
 	if err != nil {
 		return 0, fmt.Errorf("failed get request: %w", err)
 	}
