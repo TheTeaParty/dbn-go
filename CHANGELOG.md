@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v0.6.5 (2025-10-01)
+
+ * Add Parquet support for Statistics message `StatMsg`
+ * `dbn-go-hist` now dispatches multiple smaller requests for cost estimates since
+    large numbers of tickers would overrun the URI limits.
+
+## v0.6.4 (2025-09-05)
+
+ * Add Parquet export of publishers with `dbn-go-hist publishers --parquet <outfile>`.  Useful for some DuckDB queries.
+
 ## v0.6.3 (2025-08-11)
 
  * Add BBO schema support (#15)
