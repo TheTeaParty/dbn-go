@@ -26,7 +26,7 @@ import (
 	"github.com/valyala/fastjson/fastfloat"
 )
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Interface Type for Record Decoding
 type Record interface {
@@ -79,7 +79,7 @@ func (rtype RType) IsBbo() bool {
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Normalized Record Header
 // {"ts_event":"1704186000403918695","rtype":0,"publisher_id":2,"instrument_id":15144}
@@ -117,7 +117,7 @@ func (h *RHeader) Fill_Json(val *fastjson.Value) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 type BidAskPair struct {
 	BidPx int64  `json:"bid_px" csv:"bid_px"` // The bid price.
@@ -150,7 +150,7 @@ func (p *BidAskPair) Fill_Json(val *fastjson.Value) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // A price level consolidated from multiple venues.
 type ConsolidatedBidAskPair struct {
@@ -188,7 +188,7 @@ func (p *ConsolidatedBidAskPair) Fill_Json(val *fastjson.Value) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Normalized Mbp0 message (Market-by-price depth0)
 // {"ts_recv":"1704186000404085841","hd":{"ts_event":"1704186000403918695","rtype":0,"publisher_id":2,"instrument_id":15144},"action":"T","side":"B","depth":0,"price":"476370000000","size":40,"flags":130,"ts_in_delta":167146,"sequence":277449,"symbol":"SPY"}
@@ -203,6 +203,7 @@ type Mbp0Msg struct { // TradeMsg
 	TsRecv    uint64  `json:"ts_recv" csv:"ts_recv"`         // The capture-server-received timestamp expressed as the number of nanoseconds since the UNIX epoch.
 	TsInDelta int32   `json:"ts_in_delta" csv:"ts_in_delta"` // The matching-engine-sending timestamp expressed as the number of nanoseconds before ts_recv.
 	Sequence  uint32  `json:"sequence" csv:"sequence"`       // The message sequence number assigned at the venue.
+	Symbol    string  `json:"symbol" csv:"symbol"`           // The symbol string.
 }
 
 const Mbp0Msg_Size = RHeader_Size + 32
@@ -247,10 +248,11 @@ func (r *Mbp0Msg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	r.TsRecv = fastjson_GetUint64FromString(val, "ts_recv")
 	r.TsInDelta = int32(val.GetInt("ts_in_delta"))
 	r.Sequence = uint32(val.GetUint("sequence"))
+	r.Symbol = string(val.GetStringBytes("symbol"))
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Normalized market-by-order (MBO) message.
 // The record of the [`Mbo`](crate::enums::Schema::Mbo) schema.
@@ -315,7 +317,7 @@ func (r *MboMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Normalized market-by-price (MBP) implementation with a known book depth of 1. The record of the [`Mbp1`](crate::enums::Schema::Mbp1) schema.
 type Mbp1Msg struct {
@@ -383,7 +385,7 @@ func (r *Mbp1Msg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Consolidated market by price implementation with a known book depth of 1. The record of the
 // [`Cmbp1`](crate::Schema::Cmbp1) schema.
@@ -450,7 +452,7 @@ func (r *Cmbp1Msg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Normalized market-by-price implementation with a known book depth of 10. The record of the [`Mbp10`](crate::enums::Schema::Mbp10) schema.
 type Mbp10Msg struct {
@@ -523,7 +525,7 @@ func (r *Mbp10Msg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Normalized Ohlcv Message (OHLC candlestick, bar)
 // {"hd":{"ts_event":"1702987922000000000","rtype":32,"publisher_id":40,"instrument_id":15144},"open":"472600000000","high":"472600000000","low":"472600000000","close":"472600000000","volume":"300"}
@@ -574,7 +576,7 @@ func (r *OhlcvMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Normalized Imbalance Message
 // {"ts_recv":"1711027500000942123","hd":{"ts_event":"1711027500000776211","rtype":20,"publisher_id":2,"instrument_id":17598},"ref_price":"0","auction_time":"0","cont_book_clr_price":"0","auct_interest_clr_price":"0","ssr_filling_price":"0","ind_match_price":"0","upper_collar":"0","lower_collar":"0","paired_qty":0,"total_imbalance_qty":0,"market_imbalance_qty":0,"unpaired_qty":0,"auction_type":"O","side":"N","auction_status":0,"freeze_status":0,"num_extensions":0,"unpaired_side":"N","significant_imbalance":"~"}
@@ -672,7 +674,7 @@ func (r *ImbalanceMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento Symbol Mapping Message
 // This is not a strict byte-layout because StypeInSymbol and StypeOutSymbol have dynamic lengths
@@ -747,7 +749,7 @@ func (r *SymbolMappingMsg) Fill_Json(val *fastjson.Value, header *RHeader) error
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 type ErrorMsg struct {
 	Header RHeader                `json:"hd" csv:"hd"`           // The common header.
@@ -790,7 +792,7 @@ func (r *ErrorMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 type SystemMsg struct {
 	Header  RHeader                 `json:"hd" csv:"hd"`     // The common header.
@@ -830,7 +832,7 @@ func (r *SystemMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // StatMsg is a statistics message. A catchall for various data disseminated by publishers.
 // The [`stat_type`](Self::stat_type) indicates the statistic contained in the message.
@@ -896,7 +898,7 @@ func (r *StatMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // Databento normalized Trading Status Update message.
 type StatusMsg struct {
@@ -952,7 +954,7 @@ func (r *StatusMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // BboMsg is a Best Bid and Offer record subsampled on a 1-second or 1-minute interval.
 // It provides the last best bid, best offer, and sale at the specified interval.
@@ -1025,7 +1027,7 @@ func (r *BboMsg) Fill_Json(val *fastjson.Value, header *RHeader) error {
 	return nil
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 // InstrumentDefMsg is a statistics message. A catchall for various data disseminated by publishers.
 // The [`stat_type`](Self::stat_type) indicates the statistic contained in the message.
